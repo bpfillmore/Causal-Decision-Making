@@ -1,64 +1,61 @@
 Traceback (most recent call last):
-  File "/Users/alinaxu/opt/anaconda3/lib/python3.9/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/jupyter_cache/executors/utils.py", line 58, in single_nb_execution
     executenb(
-  File "/Users/alinaxu/opt/anaconda3/lib/python3.9/site-packages/nbclient/client.py", line 1204, in execute
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/nbclient/client.py", line 1314, in execute
     return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
-  File "/Users/alinaxu/opt/anaconda3/lib/python3.9/site-packages/nbclient/util.py", line 84, in wrapped
-    return just_run(coro(*args, **kwargs))
-  File "/Users/alinaxu/opt/anaconda3/lib/python3.9/site-packages/nbclient/util.py", line 62, in just_run
-    return loop.run_until_complete(coro)
-  File "/Users/alinaxu/opt/anaconda3/lib/python3.9/asyncio/base_events.py", line 647, in run_until_complete
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/base_events.py", line 685, in run_until_complete
     return future.result()
-  File "/Users/alinaxu/opt/anaconda3/lib/python3.9/site-packages/nbclient/client.py", line 663, in async_execute
+           ^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/nbclient/client.py", line 709, in async_execute
     await self.async_execute_cell(
-  File "/Users/alinaxu/opt/anaconda3/lib/python3.9/site-packages/nbclient/client.py", line 965, in async_execute_cell
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/nbclient/client.py", line 1062, in async_execute_cell
     await self._check_raise_for_error(cell, cell_index, exec_reply)
-  File "/Users/alinaxu/opt/anaconda3/lib/python3.9/site-packages/nbclient/client.py", line 862, in _check_raise_for_error
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/nbclient/client.py", line 918, in _check_raise_for_error
     raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
 nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
-# TODO: there might be something wrong with the multiple step as the difference between A-learning and Q-learning is large
-
-# A demo with code on how to use the package
-from causaldm.learners import ALearning
-from causaldm.test import shared_simulation
 import numpy as np
-
-ALearn = ALearning.ALearning()
-model_info = [{'X_prop': list(range(2)),
-              'X_q0': list(range(2)),
-               'X_C':{1:list(range(2))},
-              'action_space': [0,1]},
-             {'X_prop': [0,4],
-              'X_q0': list(range(5)),
-               'X_C':{1:[0,4]},
-              'action_space': [0,1]}]
-ALearn.train(X, A, Y, model_info, T=2, bootstrap = True, n_bs = 100)
-fitted_params,fitted_value,value_avg,value_std,params=ALearn.estimate_value_boots()
-print('Value_hat:',value_avg,'Value_std:',value_std)
-##estimated contrast model at t = 0
-print('estimated_contrast:',params[0]['contrast'])
-print('estimated_contrast:',params[1]['contrast'])
-print('estimated_prop:',params[0]['prop'])
-print('estimated_prop:',params[1]['prop'])
-
-# recommend action
-opt_d = ALearn.recommend().head()
-# get the estimated value of the optimal regime
-V_hat = ALearn.estimate_value()
-print("opt regime:",opt_d)
-print("opt value:",V_hat)
+def generate_test_case(setup, N, seed = 0, phi1=None, phi2=None,psi1=None,psi2=None):
+    if setup == 'random_binary':
+        np.random.seed(seed)
+        s1 = np.random.normal(450,150, N)
+        A1 = np.random.binomial(1,np.exp(phi1[0]+phi1[1]*s1)/(1+np.exp(phi1[0]+phi1[1]*s1)),size = N)
+        s2 = np.random.normal(1.25*s1,60, N)
+        A2 = np.random.binomial(1,np.exp(phi2[0]+phi2[1]*s2)/(1+np.exp(phi2[0]+phi2[1]*s2)),size = N)
+        A = {}
+        A[0] = A1
+        A[1] = A2
+        mu1 = (psi1[0]+psi1[1]*s1)*((psi1[0]+psi1[1]*s1 >0).astype(int)-A1)
+        mu2 = (psi2[0]+psi2[1]*s2)*((psi2[0]+psi2[1]*s2 >0).astype(int)-A2)
+        Y_opt = np.random.normal(400+1.6*s1,60)
+        Y = Y_opt - mu1 - mu2
+        opt_true = {}
+        opt_true[0] = (psi1[0]+psi1[1]*s1 >0).astype(int)
+        opt_true[1] = (psi2[0]+psi2[1]*s2 >0).astype(int)
+        X = np.hstack([np.ones(N)[:, np.newaxis], s1[:, np.newaxis], A1[:, np.newaxis], (s1*A1)[:, np.newaxis], s2[:, np.newaxis]])
+        
+        instance = {
+            'X' : X, 
+            'A' : A, 
+            'Y' : Y, 
+            'optimal_A' : opt_true, 
+            'optimal_V' : np.mean(Y_opt),
+            'XAY' : [X, A, Y]
+        }
+        return instance
 ------------------
 
-[0;31m---------------------------------------------------------------------------[0m
-[0;31mImportError[0m                               Traceback (most recent call last)
-[0;32m/var/folders/9j/vb5nb4rd5bx0gr1q5ytx9q600000gn/T/ipykernel_70286/1171830641.py[0m in [0;36m<module>[0;34m[0m
-[1;32m      2[0m [0;34m[0m[0m
-[1;32m      3[0m [0;31m# A demo with code on how to use the package[0m[0;34m[0m[0;34m[0m[0m
-[0;32m----> 4[0;31m [0;32mfrom[0m [0mcausaldm[0m[0;34m.[0m[0mlearners[0m [0;32mimport[0m [0mALearning[0m[0;34m[0m[0;34m[0m[0m
-[0m[1;32m      5[0m [0;32mfrom[0m [0mcausaldm[0m[0;34m.[0m[0mtest[0m [0;32mimport[0m [0mshared_simulation[0m[0;34m[0m[0;34m[0m[0m
-[1;32m      6[0m [0;32mimport[0m [0mnumpy[0m [0;32mas[0m [0mnp[0m[0;34m[0m[0;34m[0m[0m
 
-[0;31mImportError[0m: cannot import name 'ALearning' from 'causaldm.learners' (/Users/alinaxu/opt/anaconda3/lib/python3.9/site-packages/causaldm/learners/__init__.py)
-ImportError: cannot import name 'ALearning' from 'causaldm.learners' (/Users/alinaxu/opt/anaconda3/lib/python3.9/site-packages/causaldm/learners/__init__.py)
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mModuleNotFoundError[0m                       Traceback (most recent call last)
+Cell [0;32mIn[1], line 1[0m
+[0;32m----> 1[0m [38;5;28;01mimport[39;00m [38;5;21;01mnumpy[39;00m [38;5;28;01mas[39;00m [38;5;21;01mnp[39;00m
+[1;32m      2[0m [38;5;28;01mdef[39;00m [38;5;21mgenerate_test_case[39m(setup, N, seed [38;5;241m=[39m [38;5;241m0[39m, phi1[38;5;241m=[39m[38;5;28;01mNone[39;00m, phi2[38;5;241m=[39m[38;5;28;01mNone[39;00m,psi1[38;5;241m=[39m[38;5;28;01mNone[39;00m,psi2[38;5;241m=[39m[38;5;28;01mNone[39;00m):
+[1;32m      3[0m     [38;5;28;01mif[39;00m setup [38;5;241m==[39m [38;5;124m'[39m[38;5;124mrandom_binary[39m[38;5;124m'[39m:
+
+[0;31mModuleNotFoundError[0m: No module named 'numpy'
 
